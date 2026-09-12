@@ -1,15 +1,10 @@
-// ---------------------------------------------------------------------------
-// Paste your Firebase project config below. Get this from:
-// Firebase console → Project settings → General → "Your apps" → SDK setup
-// (the free "Spark" plan is plenty for a fantasy league of a few dozen people)
-// ---------------------------------------------------------------------------
 export const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID",
+  apiKey: "AIzaSyBIrTs2L-ZeuUlTf9Df4JuvMuch0UbLTTU",
+  authDomain: "dwts-fantasy-league-szn35.firebaseapp.com",
+  projectId: "dwts-fantasy-league-szn35",
+  storageBucket: "dwts-fantasy-league-szn35.firebasestorage.app",
+  messagingSenderId: "748572809469",
+  appId: "1:748572809469:web:3bc7205e02e4d9169a8694",
 };
 
 import { initializeApp } from "firebase/app";
