@@ -1,0 +1,20 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Shared league/photo docs: readable and writable by anyone who has the
+    // app open. The league code is the only access control, same as before —
+    // this matches a physical invite code, not a login.
+    match /shared/{docId} {
+      allow read, write: if true;
+    }
+
+    // Personal docs (this device's identity, etc.): only that device's own
+    // anonymous auth user can read or write its own docs. Doc IDs are
+    // "{uid}__{key}", so this checks the doc ID starts with the caller's uid.
+    match /personal/{docId} {
+      allow read, write: if request.auth != null
+        && docId.matches(request.auth.uid + '__.*');
+    }
+  }
+}
