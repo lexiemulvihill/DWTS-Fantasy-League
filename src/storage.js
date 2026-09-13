@@ -7,7 +7,7 @@
 // the same trust model as before: the league code IS the access control.
 
 import {
-  doc, getDoc, setDoc, deleteDoc, collection, getDocs, query, where,
+  doc, getDoc, setDoc, deleteDoc, collection, getDocs, query, where, runTransaction,
 } from "firebase/firestore";
 import { signInAnonymously, onAuthStateChanged } from "firebase/auth";
 import { db, auth } from "./firebase";
@@ -69,5 +69,23 @@ const storage = {
     return { keys, prefix, shared };
   },
 };
+
+// Safe concurrent update for a shared doc: reads whatever the LATEST server
+// value actually is (never a locally-cached copy from a few seconds ago),
+// lets updateFn decide what the new value should be based on that, and
+// writes it back -- all as one atomic step. If two devices try this at the
+// same instant, Firestore automatically retries the loser against the
+// winner's result, so an update never silently vanishes underneath another
+// device's write the way a plain overwrite can.
+export async function transactShared(key, updateFn) {
+  const ref = doc(db, "shared", safeId(key));
+  return runTransaction(db, async (tx) => {
+    const snap = await tx.get(ref);
+    const current = snap.exists() ? JSON.parse(snap.data().value) : null;
+    const next = updateFn(current);
+    tx.set(ref, { value: JSON.stringify(next), key, updatedAt: Date.now() });
+    return next;
+  });
+}
 
 export default storage;

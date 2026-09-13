@@ -4,7 +4,7 @@ import {
   Check, Skull, Sparkles, ClipboardList, Settings, ChevronLeft, Plus, Minus,
   Camera, X, Gauge, ScrollText, Search,
 } from "lucide-react";
-import storage from "./storage";
+import storage, { transactShared } from "./storage";
 
 /* ======================================================================
    PALETTE
@@ -265,19 +265,28 @@ export default function App() {
 
   /* ---- join ---- */
   async function joinLeague({ code: enterCode, name, team }) {
-    const found = await loadShared(leagueKey(enterCode));
-    if (!found) return { error: "No league found with that code." };
-    if (found.players.length >= 4) return { error: "That league already has four players." };
-    const nextId = "p" + found.players.length;
-    const l = structuredClone(found);
-    l.players.push({ id: nextId, name, team: team || "New Squad" });
-    l.ready[nextId] = false;
-    setCode(enterCode);
-    setMyId(nextId);
-    await saveIdentity({ code: enterCode, playerId: nextId });
-    persist(l, enterCode);
-    setScreen(l.draftComplete ? "app" : l.screenHint || "lobby");
-    return { ok: true };
+    try {
+      const next = await transactShared(leagueKey(enterCode), (current) => {
+        if (!current) throw new Error("NOT_FOUND");
+        if (current.players.length >= 4) throw new Error("FULL");
+        const nextId = "p" + current.players.length;
+        const l = structuredClone(current);
+        l.players.push({ id: nextId, name, team: team || "New Squad" });
+        l.ready[nextId] = false;
+        return l;
+      });
+      const myNewId = next.players[next.players.length - 1].id;
+      setCode(enterCode);
+      setMyId(myNewId);
+      await saveIdentity({ code: enterCode, playerId: myNewId });
+      setLeague(next);
+      setScreen(next.draftComplete ? "app" : next.screenHint || "lobby");
+      return { ok: true };
+    } catch (e) {
+      if (e.message === "NOT_FOUND") return { error: "No league found with that code." };
+      if (e.message === "FULL") return { error: "That league already has four players." };
+      return { error: "Something went wrong joining. Try again." };
+    }
   }
 
   async function leaveLeague() {
@@ -317,21 +326,27 @@ export default function App() {
   }
 
   /* ---- lobby / order ---- */
-  function toggleReady() {
-    const l = structuredClone(league);
-    l.ready[myId] = !l.ready[myId];
-    persist(l);
+  async function toggleReady() {
+    const next = await transactShared(leagueKey(code), (current) => {
+      const l = structuredClone(current);
+      l.ready[myId] = !l.ready[myId];
+      return l;
+    });
+    setLeague(next);
   }
-  function randomizeOrder() {
-    const l = structuredClone(league);
-    const ids = l.players.map((p) => p.id);
-    for (let i = ids.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [ids[i], ids[j]] = [ids[j], ids[i]];
-    }
-    l.draftOrder = ids;
-    l.screenHint = "draft";
-    persist(l);
+  async function randomizeOrder() {
+    const next = await transactShared(leagueKey(code), (current) => {
+      const l = structuredClone(current);
+      const ids = l.players.map((p) => p.id);
+      for (let i = ids.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [ids[i], ids[j]] = [ids[j], ids[i]];
+      }
+      l.draftOrder = ids;
+      l.screenHint = "draft";
+      return l;
+    });
+    setLeague(next);
     setReveal(true);
     setTimeout(() => { setReveal(false); setScreen("draft"); }, 2800);
   }
