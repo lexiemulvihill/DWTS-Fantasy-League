@@ -222,7 +222,11 @@ export default function App() {
     return () => clearInterval(iv);
   }, [code, screen]);
 
-  const persist = (next) => { setLeague(next); if (code) saveShared(leagueKey(code), next); };
+  const persist = (next, codeOverride) => {
+    setLeague(next);
+    const c = codeOverride || code;
+    if (c) saveShared(leagueKey(c), next);
+  };
   const persistPhotos = (next) => { setPhotos(next); if (code) saveShared(photoKey(code), next); };
   const flash = (m) => { setToast(m); setTimeout(() => setToast(null), 2400); };
 
@@ -255,7 +259,7 @@ export default function App() {
     setCode(newCode);
     setMyId("p0");
     saveIdentity({ code: newCode, playerId: "p0" });
-    persist(l);
+    persist(l, newCode);
     setScreen("lobby");
   }
 
@@ -271,7 +275,7 @@ export default function App() {
     setCode(enterCode);
     setMyId(nextId);
     await saveIdentity({ code: enterCode, playerId: nextId });
-    persist(l);
+    persist(l, enterCode);
     setScreen(l.draftComplete ? "app" : l.screenHint || "lobby");
     return { ok: true };
   }
