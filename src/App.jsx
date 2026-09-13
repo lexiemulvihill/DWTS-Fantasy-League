@@ -196,7 +196,7 @@ export default function App() {
       const id = await loadIdentity();
       if (id) {
         const [l, p] = await Promise.all([loadShared(leagueKey(id.code)), loadShared(photoKey(id.code))]);
-        if (l) {
+        if (l && l.players.some((p) => p.id === id.playerId)) {
           setCode(id.code);
           setMyId(id.playerId);
           setLeague(l);
@@ -204,7 +204,6 @@ export default function App() {
           setScreen(l.draftComplete ? "app" : l.screenHint || "lobby");
           return;
         }
-        // The league this device remembers no longer exists in shared storage.
         await clearIdentity();
       }
       setScreen("welcome");
