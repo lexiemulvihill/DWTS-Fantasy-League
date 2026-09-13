@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   onAuthStateChanged,
-  signInWithRedirect,
-  getRedirectResult,
+  signInWithPopup,
   GoogleAuthProvider,
   signOut,
 } from "firebase/auth";
@@ -24,23 +23,20 @@ export default function AuthGate({ children }) {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    (async () => {
-      try {
-        await getRedirectResult(auth);
-      } catch (e) {
-        setError(e.message || "Sign-in failed. Try again.");
-      }
-    })();
-
     const unsub = onAuthStateChanged(auth, (user) => {
       setStatus(user ? "signed-in" : "signed-out");
     });
     return unsub;
   }, []);
 
-  function handleSignIn() {
+  async function handleSignIn() {
     setError("");
-    signInWithRedirect(auth, googleProvider);
+    try {
+      await signInWithPopup(auth, googleProvider);
+      // onAuthStateChanged above picks up the result automatically.
+    } catch (e) {
+      setError(e.message || "Sign-in failed. Try again.");
+    }
   }
 
   if (status === "signed-in") return children;
