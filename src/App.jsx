@@ -670,7 +670,7 @@ export default function App() {
     return (
       <Shell theme="dark">
         <Lobby league={league} myId={myId} onReady={toggleReady} onRandomize={randomizeOrder}
-          onFillBots={myId === "p0" ? fillWithBots : null} reveal={reveal} />
+          onFillBots={myId === "p0" ? fillWithBots : null} onLeave={leaveLeague} reveal={reveal} />
       </Shell>
     );
 
@@ -1021,7 +1021,7 @@ function CastRow({ couple, index, photo, onField, onPhoto }) {
    LOBBY + ORDER REVEAL
 ====================================================================== */
 
-function Lobby({ league, myId, onReady, onRandomize, onFillBots, reveal }) {
+function Lobby({ league, myId, onReady, onRandomize, onFillBots, onLeave, reveal }) {
   const openSeats = 4 - league.players.length;
   const allReady = openSeats === 0 && league.players.every((p) => league.ready[p.id]);
   const [copied, setCopied] = useState(false);
@@ -1120,6 +1120,19 @@ function Lobby({ league, myId, onReady, onRandomize, onFillBots, reveal }) {
         </button>
       ) : (
         <button className="btn btn-secondary" style={{ width: "100%" }} onClick={onReady}>Not ready</button>
+      )}
+
+      {onLeave && (
+        <button
+          style={{
+            display: "block", margin: "18px auto 0", fontSize: 12.5,
+            background: "none", border: "none", color: "var(--muted)",
+            textDecoration: "underline", cursor: "pointer",
+          }}
+          onClick={() => { if (window.confirm("Leave this league? You can rejoin later with the code.")) onLeave(); }}
+        >
+          Not you, or joined by mistake? Leave this league
+        </button>
       )}
     </div>
   );
